@@ -85,7 +85,7 @@ async function getClaudeResponse(userMessage) {
 async function sendMessengerMessage(recipientId, message) {
   try {
     await axios.post(
-      `https://graph.facebook.com/v19.0/me/messages`,
+`https://graph.facebook.com/v21.0/me/messages`
       {
         recipient: { id: recipientId },
         message: { text: message },
