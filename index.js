@@ -9,6 +9,9 @@ const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'webhook2026';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 const ACTIVIX_API_KEY = process.env.ACTIVIX_API_KEY || '';
 
+// Mémoire des conversations
+const conversations = {};
+
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
@@ -33,22 +36,47 @@ app.post('/webhook', async (req, res) => {
       const senderId = event.sender.id;
       const messageText = event.message.text;
       console.log('Message recu de ' + senderId + ': ' + messageText);
-      const aiResponse = await getClaudeResponse(messageText);
+
+      // Initialiser historique si nouveau client
+      if (!conversations[senderId]) {
+        conversations[senderId] = [];
+      }
+
+      // Ajouter message du client à l'historique
+      conversations[senderId].push({
+        role: 'user',
+        content: messageText
+      });
+
+      // Garder seulement les 10 derniers messages
+      if (conversations[senderId].length > 10) {
+        conversations[senderId] = conversations[senderId].slice(-10);
+      }
+
+      // Obtenir réponse Claude avec historique complet
+      const aiResponse = await getClaudeResponse(senderId, conversations[senderId]);
+
+      // Ajouter réponse Claude à l'historique
+      conversations[senderId].push({
+        role: 'assistant',
+        content: aiResponse
+      });
+
       await sendMessengerMessage(senderId, aiResponse);
       await createActivixLead(senderId, messageText);
     }
   }
 });
 
-async function getClaudeResponse(userMessage) {
+async function getClaudeResponse(senderId, history) {
   try {
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
         model: 'claude-sonnet-4-5',
         max_tokens: 1000,
-        system: 'Tu es un agent IA specialise en vente automobile pour Hyundai St-Raymond, un concessionnaire quebecois. Tu reponds en francais canadien, tu es chaleureux et professionnel. Tu veux toujours obtenir les coordonnees du client et planifier un essai routier ou rendez-vous. Sois concis (2-3 phrases max).',
-        messages: [{ role: 'user', content: userMessage }],
+        system: 'Tu es un agent IA specialise en vente automobile pour Hyundai St-Raymond, un concessionnaire quebecois. Tu reponds en francais canadien, tu es chaleureux et professionnel. Tu te souviens de tout ce que le client ta dit dans la conversation. Tu veux obtenir le nom, telephone et courriel du client et planifier un essai routier ou rendez-vous. Ne redemande jamais une information que le client ta deja donnee. Sois concis (2-3 phrases max).',
+        messages: history,
       },
       {
         headers: {
