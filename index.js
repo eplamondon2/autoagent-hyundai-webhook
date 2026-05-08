@@ -45,7 +45,7 @@ async function getClaudeResponse(userMessage) {
     const response = await axios.post(
       'https://api.anthropic.com/v1/messages',
       {
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1000,
         system: 'Tu es un agent IA specialise en vente automobile pour Hyundai St-Raymond, un concessionnaire quebecois. Tu reponds en francais canadien, tu es chaleureux et professionnel. Tu veux toujours obtenir les coordonnees du client et planifier un essai routier ou rendez-vous. Sois concis (2-3 phrases max).',
         messages: [{ role: 'user', content: userMessage }],
