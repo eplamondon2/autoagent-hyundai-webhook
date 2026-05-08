@@ -5,7 +5,7 @@ const app = express();
 app.use(express.json());
 
 const PAGE_ACCESS_TOKEN = process.env.PAGE_ACCESS_TOKEN;
-const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+const VERIFY_TOKEN = process.env.VERIFY_TOKEN || 'webhook2026';
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const ACTIVIX_API_KEY = process.env.ACTIVIX_API_KEY;
 
@@ -14,7 +14,9 @@ app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
-  if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+console.log('Token reçu:', token);
+console.log('Token attendu:', VERIFY_TOKEN);
+if (mode === 'subscribe' && token === VERIFY_TOKEN) {
     console.log('Webhook vérifié !');
     res.status(200).send(challenge);
   } else {
